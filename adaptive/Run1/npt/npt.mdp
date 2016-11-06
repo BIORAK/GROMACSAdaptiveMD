@@ -1,0 +1,103 @@
+; run parameters for NPT equilibration step
+; values appropriate for CHARMM36 force field
+
+include        			= 	-I../../top 		; Directories to include in the topology format
+define					=	-DPOSRES 			; position restrain the protein
+
+; the paramaters
+;
+integrator				=	md					; md = Leap Frog algorithm for integrating Newtonś equations of motion 
+nsteps					=   500000				; 1 ns , 500000 * 0.002
+dt						=   0.002 				; it is in ps
+
+; NEIGHBORSEARCHING PARAMETERS
+; nblist update frequency
+nstlist					=	40					; Frequency to update the neighbor list and long range forces
+
+; ns algorithm (simple or grid)
+ns-type					= 	grid				; search neighboring grid cells
+
+; Periodic boundary conditions: xyz, no, xy
+pbc                 	= 	xyz 				; 3-D PBC Periodic Boundary Conditions (yes/no)
+periodic-molecules  	= 	no
+
+; nblist cut-off
+; NBOND CUTNB  (see notes on ELEC below)
+rlist               	= 	1.2					; Cut-off for making neighbor list (short range forces). This is ignored in GPU
+
+; OPTIONS FOR ELECTROSTATICS AND VDW
+; Method for doing electrostatics
+; From the CHARMM docs (ewald.doc):
+; NBOND EWALD PMEWald KAPPa 0.34 ORDEr 6 CTOFNB 12.0 CUTNB 14.0
+coulombtype         	= 	PME					; Treatment of long range electrostatic interactions
+rcoulomb            	= 	1.2					; long range electrostatic cut-off
+
+; Relative dielectric constant for the medium and the reaction field
+epsilon-r           	= 	1
+;epsilon-rf          	= 	1 					; Applicable when Reaction field electrostatics is used
+
+; Method for doing Van der Waals
+; NBOND VATOM VSWI CTONNB 10.0 CTOFNB 12.0 CUTNB 14.0
+cutoff-scheme 	    	= 	Verlet
+vdw-type                = 	Cut-off
+vdw-modifier 			= 	Force-switch
+
+; cut-off lengths       
+rvdw-switch         	= 	1.0
+rvdw                	= 	1.2					; long range Van der Waals cut-off
+
+; Apply long range dispersion corrections for Energy and Pressure 
+; NBOND LRC
+DispCorr            	= 	No					; account for cut-off vdW scheme
+
+; Seperate tables between energy group pairs
+energygrp-table         = 
+
+; Spacing for the PME/PPPM FFT grid
+; CHARMM: EWALD recommended spacing: 0.8 A - 1.2 A and 6th Order spline
+fourierspacing      	= 	0.12
+
+; EWALD/PME/PPPM parameters
+; (possibly increase pme_order to 6 to match the CHARMM recommendation)
+pme-order           	= 	4
+ewald-rtol          	= 	1e-05
+ewald-geometry      	= 	3d
+epsilon-surface     	= 	0
+
+; OPTIONS FOR WEAK COUPLING ALGORITHMS
+; Temperature coupling
+Tcoupl              	= 	V-rescale			; modified Berendsen thermostat
+tau-t               	= 	0.1 0.1				; time constant, in ps
+tc-grps             	= 	Protein non-Protein	; two coupling groups - more accurate
+ref-t               	= 	300 300				; reference temperature, one for each group, in K
+
+; Pressure coupling
+Pcoupl              	= 	Berendsen			; Pressure coupling on in NPT
+Pcoupltype          	= 	isotropic			; uniform scaling of box vectors
+
+; Time constant (ps), compressibility (1/bar) and reference P (bar)
+tau-p               	= 	1.0					; time constant, in ps
+compressibility     	= 	4.5e-5 				; isothermal compressibility of water, bar^-1
+ref-p               	= 	1.01325				; reference pressure, in bar
+refcoord-scaling 		= 	com
+
+; OPTIONS FOR BONDS    
+; CHARMM uses SHAKE with tol 1e-6
+continuation	        = 	yes					; Restarting after NVT 
+constraints  			= 	h-bonds   			; Constrain hydrogen bonds
+constraint_algorithm 	= 	LINCS    			; Type of constraint algorithm
+lincs-iter				= 	1					; accuracy of LINCS
+shake-tol            	= 	0.0001   			; Relative tolerance of shake
+lincs-order         	= 	4        			; Highest order in the expansion of the constraint coupling matrix
+lincs-warnangle      	= 	30       			; Rotate over more degrees than
+
+; Output control
+;
+nstxout					= 	500					; save coordinates every 1 ps
+nstvout					= 	500					; save velocities every 1 ps
+nstenergy				= 	500					; save energies every 1 ps
+nstlog					= 	500					; update log file every 1 ps
+
+; Velocity generation
+;
+gen-vel					= 	no					; Velocity generation is off

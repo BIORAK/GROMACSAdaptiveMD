@@ -1,0 +1,73 @@
+; Gromacs run parameter file for energy minimization
+; - backbone restraints enabled
+; - use flexible water for cg (-DFLEXSPC)
+; LINES STARTING WITH ';' ARE COMMENTS
+
+include        		= 	-I../top 				; Directories to include in the topology format
+define         		= 	-DPOSRES 
+
+; Parameters describing what to do, when to stop and what to save
+integrator			= 	steep					; steep = steepest descent minimization
+;integrator    		= 	cg						, cg = conjugate gradient minimization
+;integrator    		= 	l-bfgs	 
+											
+;Energy minimizing stuff
+;
+emtol          		= 	500						; Stop minimization when the energy changes by less than emtol kJ/mol.
+emstep         		= 	0.01	
+nsteps         		= 	10000					; Maximum number of (minimization) steps to perform
+;nstcgsteep    		= 	100
+;nstenergy			= 	10						; Write energies to disk every nstenergy steps
+;nstxout-compressed	= 	10						; Write coordinates to disk every nstxtcout steps
+;compressed-x-grps	= 	Protein					; Which coordinate group(s) to write to disk
+;energygrps			= 	Protein					; Which energy group(s) to write to disk
+constraints         = 	none					; Bond types to replace by constraints
+
+; Parameters describing how to find the neighbors of each atom and how to calculate the interactions
+; NEIGHBORSEARCHING PARAMETERS
+; nblist update frequency
+nstlist				=	40						; Frequency to update the neighbor list and long range forces
+
+; ns algorithm (simple or grid)
+ns_type				= 	grid					; search neighboring grid cells
+
+; Periodic boundary conditions: xyz, no, xy
+pbc                 = 	xyz 					; 3-D PBC  Periodic Boundary Conditions (yes/no)
+periodic_molecules  = 	no
+
+; nblist cut-off
+; NBOND CUTNB  (see notes on ELEC below)
+rlist               = 	1.2						; Cut-off for making neighbor list (short range forces)
+
+; OPTIONS FOR ELECTROSTATICS AND VDW
+; Method for doing electrostatics
+; From the CHARMM docs (ewald.doc):
+; NBOND EWALD PMEWald KAPPa 0.34 ORDEr 6 CTOFNB 12.0 CUTNB 14.0
+coulombtype         = 	PME						; Treatment of long range electrostatic interactions
+rcoulomb            = 	1.2						; long range electrostatic cut-off
+
+; Relative dielectric constant for the medium and the reaction field
+epsilon_r           = 	1
+;epsilon-rf         = 	1 						; Applicable when Reaction field electrostatics is used
+
+; Method for doing Van der Waals
+; NBOND VATOM VSWI CTONNB 10.0 CTOFNB 12.0 CUTNB 14.0
+cutoff-scheme 	    = 	Verlet
+vdw-type            = 	Cut-off
+vdw-modifier 		= 	Force-switch
+;vdwtype            = 	shift   				; use shift for L-BFGS
+
+; cut-off lengths       
+rvdw-switch         = 	1.0
+rvdw                = 	1.2						; long range Van der Waals cut-off
+
+; Spacing for the PME/PPPM FFT grid
+; CHARMM: EWALD recommended spacing: 0.8 A - 1.2 A and 6th Order spline
+fourierspacing      = 	0.12
+
+; EWALD/PME/PPPM parameters
+; (possibly increase pme_order to 6 to match the CHARMM recommendation)
+pme_order           = 	4
+ewald_rtol          = 	1e-05
+ewald_geometry      = 	3d
+epsilon_surface     = 	0

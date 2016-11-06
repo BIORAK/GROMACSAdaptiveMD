@@ -1,0 +1,71 @@
+#==============================================================================
+#title           : Gromacs Commands
+#description     : Contains GROMACS commands for MD simulation
+#author          : Rakesh Ramachandran aka BioRak
+#date            : 12-Nov-2015
+#version         : 1.0
+#usage           : 
+#notes           : Needs GROMACS installation
+#python_version  : Uses Anaconda Python 2.7.10 for plotting
+#==============================================================================
+
+source ~/Softwares/gromacs/bin/GMXRC
+
+RUNNING PART FOR MD TRAJECTORY GENERATION
+############################################################################################################################################
+
+First round minimization (optional)
+-----------------------------------
+cd structure
+gmx pdb2gmx -f closed.pdb -p protein.top -o protein.gro -i posre.itp -water tip3p -ff charmm36 -nochargegrp -cmap -ignh
+gmx grompp -f em.mdp -c protein.gro -p protein.top -o eminput.tpr
+gmx mdrun -nt 10 -s eminput.tpr -c minimized.pdb
+
+############################################################################################################################################
+
+Minimization with solvent
+--------------------------
+cd ../top
+gmx pdb2gmx -f target.pdb -p protein.top -o protein.pdb -i posre.itp -water tip3p -ff charmm36 -nochargegrp -cmap -ignh
+
+cd ../solvation
+gmx editconf -f ../top/protein.pdb -o boxed.pdb -d 1.4 -bt dodecahedron -c -box 10 (make a choice about the box size and minimum solute-box distance have atleast 1.25 nm)
+gmx solvate -cp boxed.pdb -cs spc216.gro -p ../top/protein.top -o solvated.pdb
+gmx grompp -f ions.mdp -p ../top/protein.top -c solvated.pdb -o ions.tpr
+echo "SOL" | gmx genion -s ions.tpr -pname MG -pq 2 -nname CL  -nq -1 -conc 0.3 -neutral -p ../top/protein.top -o ionized.pdb
+
+cd ../emin
+gmx grompp -f em.mdp -c ../solvation/ionized.pdb -p ../top/protein.top -o em.tpr
+gmx mdrun -v -s em.tpr -deffnm em -c em.pdb
+
+############################################################################################################################################
+
+NVT Simulation
+---------------
+cd ../../Run1/nvt
+gmx grompp -f nvt.mdp -o nvt.tpr -p ../../top/protein.top -c ../../emin/em.pdb
+gmx mdrun -v -stepout 10 -s nvt.tpr -deffnm nvt -c nvt.pdb
+
+############################################################################################################################################
+
+NPT Simulation
+---------------
+cd ../../npt
+gmx grompp -f npt.mdp -o npt.tpr -p ../../top/protein.top -c ../nvt/nvt.pdb -t ../nvt/nvt.cpt
+gmx mdrun -v -stepout 10 -s npt.tpr -deffnm npt -c npt.pdb
+
+############################################################################################################################################
+
+Production Run
+---------------
+cd ../../md
+gmx grompp -f md.mdp -p ../../top/protein.top -c ../npt/npt.pdb -o md.tpr -t ../npt/npt.cpt
+gmx mdrun -v -stepout 10 -s md.tpr -deffnm md -c md.pdb
+
+Extend Production Run
+----------------------
+gmx convert-tpr -s md.tpr -o md_extend.tpr -extend 60000 (in ps)
+gmx mdrun -v -stepout 10 -s md.tpr -deffnm md -c md.pdb -cpi md.cpt -append -maxh 72.6
+
+*******************************************************************************************************************************************
+
